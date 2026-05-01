@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Otaku List</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet" />
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#08080e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Otaku List" />
+  <link rel="manifest" href="manifest.json" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #08080e;
+      color: #eeeeff;
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 100vh;
+    }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #08080e; }
+    ::-webkit-scrollbar-thumb { background: #1a1a2e; border-radius: 3px; }
+    input::placeholder, textarea::placeholder { color: #222236 !important; }
+    select option { background: #0c0c1e; color: #eeeeff; }
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(0,255,231,0.3) !important;
+      outline: none;
+    }
+    a { text-decoration: none; }
+
+    /* ── Layout ── */
+    #app {
+      min-height: 100vh;
+      background: #08080e;
+      background-image:
+        radial-gradient(ellipse 70% 35% at 5% 0%, rgba(0,255,231,0.035) 0%, transparent 60%),
+        radial-gradient(ellipse 55% 45% at 95% 95%, rgba(191,95,255,0.04) 0%, transparent 60%);
+    }
+    .container { max-width: 980px; margin: 0 auto; padding: 30px 20px 70px; }
+
+    /* ── Header ── */
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
+    .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 30px; letter-spacing: 4px; text-transform: uppercase;
+      background: linear-gradient(90deg, #00ffe7 0%, #bf5fff 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .logo-sub { font-size: 12px; color: #2a2a40; letter-spacing: 3px; margin-top: 5px; }
+    .btn-add {
+      background: linear-gradient(135deg, #00ffe7, #00b0a2);
+      color: #04040e; border: none; border-radius: 12px;
+      padding: 11px 22px; font-family: 'Syne', sans-serif; font-size: 12px;
+      font-weight: 800; cursor: pointer; letter-spacing: 2px;
+      box-shadow: 0 0 30px rgba(0,255,231,0.28);
+      transition: transform 0.15s, box-shadow 0.15s; white-space: nowrap;
+    }
+    .btn-add:hover { transform: scale(1.05); box-shadow: 0 0 44px rgba(0,255,231,0.44); }
+
+    /* ── Stats ── */
+    .stats { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; margin-bottom: 28px; }
+    .stat-card {
+      background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.055);
+      border-radius: 12px; padding: 12px 8px; text-align: center;
+    }
+    .stat-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; }
+    .stat-label { font-size: 9px; color: #333; margin-top: 3px; letter-spacing: 0.5px; }
+
+    /* ── Filters ── */
+    .search-row { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; }
+    .search-wrap { flex: 1; position: relative; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; color: #2a2a3c; }
+    .input-base {
+      width: 100%; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 9px;
+      padding: 9px 12px; color: #eeeeff; font-size: 13px;
+      font-family: 'Noto Sans JP', sans-serif; transition: border-color 0.2s;
+    }
+    .input-search { padding-left: 36px; background: rgba(255,255,255,0.03); }
+    .select-sort { width: auto; background: rgba(255,255,255,0.03); }
+
+    .pills { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 26px; align-items: center; }
+    .pill {
+      padding: 6px 15px; border-radius: 20px; cursor: pointer;
+      font-size: 11px; font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.5px;
+      border: 1px solid rgba(255,255,255,0.06); background: transparent; color: #3a3a55;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-divider { width: 1px; height: 22px; background: rgba(255,255,255,0.07); margin: 0 3px; }
+
+    /* ── Grid ── */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px,1fr)); gap: 16px; }
+    .grid-count { font-size: 11px; color: #2a2a3c; margin-bottom: 14px; letter-spacing: 0.5px; }
+    .empty { text-align: center; padding: 80px 20px; }
+    .empty-icon { font-size: 50px; margin-bottom: 16px; }
+    .empty-title { font-family: 'Syne', sans-serif; font-size: 14px; color: #1e1e30; font-weight: 800; letter-spacing: 2px; }
+    .empty-sub { font-size: 12px; color: #161626; margin-top: 6px; }
+
+    /* ── Card ── */
+    .card {
+      position: relative; border-radius: 16px; overflow: hidden;
+      background: #0c0c1c; border: 1px solid rgba(255,255,255,0.05);
+      display: flex; flex-direction: column;
+      transition: transform 0.22s cubic-bezier(.22,.68,0,1.2), box-shadow 0.22s;
+    }
+    .card:hover { transform: translateY(-5px) scale(1.01); }
+    .card-banner { position: relative; flex-shrink: 0; }
+    .card-banner img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; display: block; }
+    .card-banner-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(0deg, #0c0c1c 0%, rgba(12,12,28,0.2) 55%, transparent 100%);
+    }
+    .card-type-badge {
+      position: absolute; top: 10px; left: 10px;
+      background: rgba(8,8,20,0.82); backdrop-filter: blur(10px);
+      border-radius: 7px; padding: 3px 10px;
+      font-size: 11px; font-weight: 700; font-family: 'Syne', sans-serif; letter-spacing: 1px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .card-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+    .card-action-btn {
+      width: 29px; height: 29px;
+      background: rgba(8,8,20,0.82); backdrop-filter: blur(10px);
+      border-radius: 7px; cursor: pointer; font-size: 11px;
+      font-family: 'Syne', sans-serif; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .card-body { padding: 14px 15px 15px; flex: 1; display: flex; flex-direction: column; gap: 9px; }
+    .card-title { font-size: 14px; font-weight: 800; color: #eeeeff; font-family: 'Syne', sans-serif; line-height: 1.3; }
+    .card-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .badge-status, .badge-genre {
+      font-size: 10px; padding: 3px 10px; border-radius: 20px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .badge-genre { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #555; font-weight: 400; }
+    .card-meta { display: flex; justify-content: space-between; align-items: center; }
+    .card-episodes { font-size: 11px; color: #3a3a55; }
+    .card-notes {
+      font-size: 11px; color: #484860; line-height: 1.55;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .card-watch-link {
+      display: flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 10px;
+      font-size: 12px; font-weight: 700; font-family: 'Syne', sans-serif; letter-spacing: 0.5px;
+      transition: all 0.15s; margin-top: auto;
+    }
+    .card-watch-link span.domain { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-add-link {
+      padding: 8px 13px; border-radius: 10px; margin-top: auto;
+      background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.06);
+      color: #2a2a3c; font-size: 11px; font-family: 'Syne', sans-serif;
+      letter-spacing: 0.5px; text-align: center; cursor: pointer;
+    }
+    .stars { display: flex; gap: 3px; align-items: center; }
+    .star { font-size: 14px; user-select: none; transition: all 0.12s; }
+    .star-interactive { cursor: pointer; }
+
+    /* ── Inline edit ── */
+    .inline-field {
+      display: flex; align-items: center; gap: 6px;
+      border-radius: 8px; padding: 4px 8px; margin: -4px -8px;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .inline-field:hover { background: rgba(255,255,255,0.05); }
+    .inline-field .edit-hint { font-size: 9px; color: #222236; opacity: 0; transition: opacity 0.15s; }
+    .inline-field:hover .edit-hint { opacity: 1; }
+    .inline-input {
+      background: rgba(0,255,231,0.06); border: 1px solid rgba(0,255,231,0.25);
+      border-radius: 7px; padding: 4px 8px; color: #eeeeff; font-size: 12px;
+      font-family: 'Noto Sans JP', sans-serif; width: 100%;
+    }
+    .inline-input:focus { outline: none; border-color: rgba(0,255,231,0.5); }
+    .inline-select {
+      background: rgba(0,255,231,0.06); border: 1px solid rgba(0,255,231,0.25);
+      border-radius: 7px; padding: 4px 8px; color: #eeeeff; font-size: 11px;
+      font-family: 'Noto Sans JP', sans-serif; width: 100%; cursor: pointer;
+    }
+    .inline-select:focus { outline: none; }
+    .ep-controls { display: flex; align-items: center; gap: 8px; }
+    .ep-btn {
+      width: 26px; height: 26px; border-radius: 7px; border: none; cursor: pointer;
+      font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+      transition: all 0.12s; flex-shrink: 0;
+    }
+    .ep-btn-minus { background: rgba(255,45,85,0.15); color: #ff2d55; }
+    .ep-btn-minus:hover { background: rgba(255,45,85,0.3); }
+    .ep-btn-plus  { background: rgba(0,255,231,0.15); color: #00ffe7; }
+    .ep-btn-plus:hover  { background: rgba(0,255,231,0.3); }
+    .ep-num { font-size: 14px; font-weight: 800; font-family: 'Syne', sans-serif; min-width: 32px; text-align: center; color: #eeeeff; }
+    .ep-label { font-size: 10px; color: #3a3a55; }
+    .inline-notes {
+      background: rgba(0,255,231,0.04); border: 1px solid rgba(0,255,231,0.2);
+      border-radius: 8px; padding: 6px 9px; color: #aaaacc; font-size: 11px;
+      font-family: 'Noto Sans JP', sans-serif; width: 100%; resize: none; line-height: 1.6;
+    }
+    .inline-notes:focus { outline: none; border-color: rgba(0,255,231,0.4); }
+
+    /* ── Delete overlay ── */
+    .del-overlay {
+      position: absolute; inset: 0; border-radius: 16px;
+      background: rgba(4,4,14,0.97); backdrop-filter: blur(10px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    }
+    .del-title { color: #ff2d55; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; text-align: center; padding: 0 20px; line-height: 1.4; }
+    .del-title span { color: #eeeeff; }
+    .del-btns { display: flex; gap: 10px; }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(4,4,12,0.93); backdrop-filter: blur(18px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-box {
+      width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
+      background: linear-gradient(160deg, #0c0c1e 0%, #111128 100%);
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 20px;
+      box-shadow: 0 0 100px rgba(0,0,0,0.8), 0 0 40px rgba(0,255,231,0.04);
+    }
+    .modal-header {
+      padding: 20px 22px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 10; border-radius: 20px 20px 0 0;
+      background: linear-gradient(160deg, #0c0c1e, #111128);
+    }
+    .modal-title { font-size: 15px; font-weight: 800; font-family: 'Syne', sans-serif; letter-spacing: 2px; }
+    .modal-sub { font-size: 11px; color: #333; margin-top: 3px; letter-spacing: 0.5px; }
+    .modal-close {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px; width: 32px; height: 32px; color: #666; cursor: pointer;
+      font-size: 14px; display: flex; align-items: center; justify-content: center;
+    }
+    .modal-body { padding: 20px 22px 22px; }
+    .cover-preview { width: 100%; height: 130px; border-radius: 12px; overflow: hidden; margin-bottom: 16px; position: relative; }
+    .cover-preview img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.65); }
+    .cover-overlay { position: absolute; inset: 0; background: linear-gradient(0deg, #0c0c1e 0%, transparent 55%); }
+    .cover-label { position: absolute; bottom: 8px; left: 12px; font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1px; }
+    .field { margin-bottom: 14px; }
+    .field-label { display: block; font-size: 10px; color: #3a3a55; letter-spacing: 1.5px; margin-bottom: 6px; text-transform: uppercase; font-family: 'Syne', sans-serif; font-weight: 700; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-stars { padding: 6px 0 2px; }
+    .modal-star { font-size: 26px; cursor: pointer; user-select: none; transition: all 0.12s; display: inline-block; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+    .btn-cancel {
+      flex: 1; background: transparent; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 11px; color: #555;
+      font-family: 'Noto Sans JP', sans-serif; font-size: 13px; cursor: pointer;
+    }
+    .btn-save {
+      flex: 2; border: none; border-radius: 10px; padding: 11px;
+      font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 1.5px;
+      transition: all 0.2s;
+    }
+    .btn-save.active {
+      background: linear-gradient(135deg, #00ffe7, #00b8a9); color: #050510;
+      cursor: pointer; box-shadow: 0 0 28px rgba(0,255,231,0.25);
+    }
+    .btn-save.inactive { background: #111128; color: #2a2a40; cursor: not-allowed; }
+    .btn-generic {
+      background: transparent; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 9px; padding: 8px 20px; color: #666;
+      font-family: 'Noto Sans JP', sans-serif; font-size: 13px; cursor: pointer;
+    }
+    .btn-danger {
+      background: #ff2d55; border: none; border-radius: 9px; padding: 8px 22px; color: #fff;
+      font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; cursor: pointer;
+      box-shadow: 0 0 22px rgba(255,45,85,0.45);
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .stats { grid-template-columns: repeat(3,1fr); }
+      .header { gap: 12px; }
+      .logo { font-size: 22px; }
+    }
+    @media (max-width: 400px) {
+      .stats { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- React via CDN (sem Babel) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+
+  <script>
+    "use strict";
+    const { useState, useEffect, useRef, createElement: h } = React;
+
+    const STATUS  = ["Assistindo","Completo","Quero Ver","Pausado","Abandonado"];
+    const TYPES   = ["Anime","Manga","Série"];
+    const GENRES  = ["Ação","Aventura","Comédia","Drama","Fantasia","Horror","Mistério","Romance","Sci-Fi","Slice of Life","Sobrenatural","Shounen","Shoujo","Seinen","Isekai"];
+
+    const STATUS_META = {
+      "Assistindo": { color:"#00ffe7", emoji:"▶" },
+      "Completo":   { color:"#39ff14", emoji:"✓" },
+      "Quero Ver":  { color:"#bf5fff", emoji:"◎" },
+      "Pausado":    { color:"#ff9f1c", emoji:"⏸" },
+      "Abandonado": { color:"#ff2d55", emoji:"✕" },
+    };
+    const TYPE_META = {
+      Anime: { icon:"⛩", accent:"#bf5fff" },
+      Manga: { icon:"巻", accent:"#ff9f1c" },
+      "Série": { icon:"▣", accent:"#00ffe7" },
+    };
+    const STAR_LABELS = ["","Horrível","Ruim","Ok","Bom","Incrível"];
+
+    const SAMPLE = [
+      { id:1, title:"Demon Slayer", type:"Anime", status:"Completo", rating:5, genre:"Ação", episodes:44, notes:"Animação de outro nível.", watchUrl:"https://www.crunchyroll.com", cover:"https://cdn.myanimelist.net/images/anime/1286/99889.jpg" },
+      { id:2, title:"Berserk",      type:"Manga", status:"Assistindo", rating:5, genre:"Fantasia", episodes:374, notes:"Obra-prima do dark fantasy.", watchUrl:"https://mangadex.org", cover:"https://cdn.myanimelist.net/images/manga/1/157897.jpg" },
+      { id:3, title:"Dark",         type:"Série", status:"Completo", rating:5, genre:"Mistério", episodes:26, notes:"Melhor série europeia feita.", watchUrl:"https://www.netflix.com", cover:"" },
+    ];
+
+    function isValidUrl(s) { try { return Boolean(new URL(s)); } catch { return false; } }
+    function getDomain(url) { try { return new URL(url).hostname.replace("www.",""); } catch { return url; } }
+
+    /* ── Stars ── */
+    function Stars({ value, onChange, size=14 }) {
+      const [hov, setHov] = useState(0);
+      return h("div", { className:"stars" },
+        [1,2,3,4,5].map(n =>
+          h("span", {
+            key: n,
+            className: `star${onChange?" star-interactive":""}`,
+            onMouseEnter: () => onChange && setHov(n),
+            onMouseLeave: () => onChange && setHov(0),
+            onClick: () => onChange && onChange(n === value ? 0 : n),
+            style: {
+              fontSize: size,
+              color: n <= (hov || value) ? "#ff9f1c" : "#1e1e30",
+              transform: onChange && n <= (hov || value) ? "scale(1.18)" : "scale(1)",
+              textShadow: n <= (hov || value) ? "0 0 10px rgba(255,159,28,0.7)" : "none",
+            }
+          }, "★")
+        ),
+        onChange && (hov || value) > 0
+          ? h("span", { style:{ color:"#555", fontSize:11, marginLeft:5, fontFamily:"'Noto Sans JP'" } }, STAR_LABELS[hov || value])
+          : null
+      );
+    }
+
+    /* ── Modal ── */
+    function Modal({ item, onClose, onSave }) {
+      const isEdit = !!(item && item.id);
+      const [form, setForm] = useState(item || { title:"", type:"Anime", status:"Quero Ver", rating:0, genre:"Ação", episodes:"", notes:"", watchUrl:"", cover:"" });
+      const [imgErr, setImgErr] = useState(false);
+      const set = (k, v) => setForm(f => ({...f, [k]: v}));
+
+      const handleSave = () => {
+        if (!form.title.trim()) return;
+        onSave(isEdit ? form : {...form, id: Date.now()});
+        onClose();
+      };
+
+      return h("div", {
+        className: "modal-backdrop",
+        onClick: e => e.target === e.currentTarget && onClose()
+      },
+        h("div", { className:"modal-box" },
+          h("div", { className:"modal-header" },
+            h("div", null,
+              h("div", { className:"modal-title", style:{ color: isEdit ? "#ff9f1c" : "#00ffe7" } },
+                isEdit ? "✏ EDITAR" : "＋ ADICIONAR"
+              ),
+              h("div", { className:"modal-sub" }, isEdit ? "Atualize as informações" : "Nova entrada na lista")
+            ),
+            h("button", { className:"modal-close", onClick: onClose }, "✕")
+          ),
+          h("div", { className:"modal-body" },
+            form.cover && !imgErr
+              ? h("div", { className:"cover-preview" },
+                  h("img", { src: form.cover, onError: () => setImgErr(true), alt:"capa" }),
+                  h("div", { className:"cover-overlay" }),
+                  h("span", { className:"cover-label" }, "PRÉVIA DA CAPA")
+                )
+              : null,
+
+            h("div", { className:"field" },
+              h("label", { className:"field-label" }, "Título"),
+              h("input", { className:"input-base", value: form.title, onChange: e => set("title", e.target.value), placeholder:"Nome do anime, manga ou série...", autoFocus: true })
+            ),
+
+            h("div", { className:"field-row", style:{ marginBottom:14 } },
+              h("div", { className:"field" },
+                h("label", { className:"field-label" }, "Tipo"),
+                h("select", { className:"input-base", value: form.type, onChange: e => set("type", e.target.value) },
+                  TYPES.map(t => h("option", { key:t }, t))
+                )
+              ),
+              h("div", { className:"field" },
+                h("label", { className:"field-label" }, "Status"),
+                h("select", { className:"input-base", value: form.status, onChange: e => set("status", e.target.value) },
+                  STATUS.map(s => h("option", { key:s }, s))
+                )
+              )
+            ),
+
+            h("div", { className:"field-row", style:{ marginBottom:14 } },
+              h("div", { className:"field" },
+                h("label", { className:"field-label" }, "Gênero"),
+                h("select", { className:"input-base", value: form.genre, onChange: e => set("genre", e.target.value) },
+                  GENRES.map(g => h("option", { key:g }, g))
+                )
+              ),
+              h("div", { className:"field" },
+                h("label", { className:"field-label" }, form.type === "Manga" ? "Capítulos" : "Episódios"),
+                h("input", { className:"input-base", type:"number", min:0, value: form.episodes, onChange: e => set("episodes", e.target.value), placeholder:"0" })
+              )
+            ),
+
+            h("div", { className:"field" },
+              h("label", { className:"field-label" }, "Avaliação"),
+              h("div", { className:"modal-stars" },
+                h(Stars, { value: form.rating, onChange: v => set("rating", v), size: 26 })
+              )
+            ),
+
+            h("div", { className:"field" },
+              h("label", { className:"field-label" }, "🔗 Link para assistir / ler"),
+              h("input", { className:"input-base", value: form.watchUrl, onChange: e => set("watchUrl", e.target.value), placeholder:"https://crunchyroll.com, netflix.com, mangadex.org..." })
+            ),
+
+            h("div", { className:"field" },
+              h("label", { className:"field-label" }, "🖼 URL da capa (opcional)"),
+              h("input", { className:"input-base", value: form.cover, onChange: e => { set("cover", e.target.value); setImgErr(false); }, placeholder:"https://... (link direto para uma imagem)" })
+            ),
+
+            h("div", { className:"field" },
+              h("label", { className:"field-label" }, "Notas"),
+              h("textarea", { className:"input-base", value: form.notes, onChange: e => set("notes", e.target.value), placeholder:"Impressões, onde parei, spoilers...", rows:3, style:{ resize:"none", lineHeight:1.6 } })
+            ),
+
+            h("div", { className:"modal-actions" },
+              h("button", { className:"btn-cancel", onClick: onClose }, "Cancelar"),
+              h("button", { className:`btn-save ${form.title.trim() ? "active" : "inactive"}`, onClick: handleSave }, "SALVAR")
+            )
+          )
+        )
+      );
+    }
+
+    /* ── Card ── */
+    function Card({ item, onEdit, onDelete, onUpdate }) {
+      const sm = STATUS_META[item.status] || STATUS_META["Quero Ver"];
+      const tm = TYPE_META[item.type] || TYPE_META["Anime"];
+      const [del, setDel] = useState(false);
+      const [imgErr, setErr] = useState(false);
+      const [editNotes, setEditNotes] = useState(false);
+      const [notesVal, setNotesVal] = useState(item.notes || "");
+      const hasCover = item.cover && !imgErr;
+      const epLabel = item.type === "Manga" ? "Cap." : "Ep.";
+
+      const patch = (key, val) => onUpdate({ ...item, [key]: val });
+
+      return h("div", {
+        className: "card",
+        onMouseEnter: e => e.currentTarget.style.boxShadow = `0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px ${sm.color}20`,
+        onMouseLeave: e => e.currentTarget.style.boxShadow = "none",
+      },
+        /* Banner */
+        h("div", {
+          className: "card-banner",
+          style: {
+            height: hasCover ? 185 : 72,
+            background: hasCover ? "#000" : `linear-gradient(135deg,${tm.accent}15,#0c0c1c 80%)`,
+          }
+        },
+          hasCover ? h("img", { src: item.cover, onError: () => setErr(true), alt: item.title }) : null,
+          hasCover ? h("div", { className:"card-banner-overlay" }) : null,
+          h("div", { className:"card-type-badge", style:{ border:`1px solid ${tm.accent}40`, color: tm.accent } },
+            h("span", { style:{ fontSize:12 } }, tm.icon),
+            item.type
+          ),
+          h("div", { className:"card-actions" },
+            h("button", {
+              className: "card-action-btn",
+              style: { border:"1px solid #00ffe730", color:"#00ffe7" },
+              onMouseEnter: e => { e.currentTarget.style.background = "#00ffe722"; e.currentTarget.style.boxShadow = "0 0 14px #00ffe744"; },
+              onMouseLeave: e => { e.currentTarget.style.background = "rgba(8,8,20,0.82)"; e.currentTarget.style.boxShadow = "none"; },
+              onClick: () => onEdit(item)
+            }, "✏"),
+            h("button", {
+              className: "card-action-btn",
+              style: { border:"1px solid #ff2d5530", color:"#ff2d55" },
+              onMouseEnter: e => { e.currentTarget.style.background = "#ff2d5522"; e.currentTarget.style.boxShadow = "0 0 14px #ff2d5544"; },
+              onMouseLeave: e => { e.currentTarget.style.background = "rgba(8,8,20,0.82)"; e.currentTarget.style.boxShadow = "none"; },
+              onClick: () => setDel(true)
+            }, "✕")
+          )
+        ),
+
+        /* Body */
+        h("div", { className:"card-body" },
+          h("h3", { className:"card-title" }, item.title),
+
+          /* Status inline */
+          h("div", null,
+            h("select", {
+              className: "inline-select",
+              value: item.status,
+              onChange: e => patch("status", e.target.value),
+              style: { color: sm.color, borderColor: `${sm.color}40`, background: `${sm.color}10` }
+            },
+              STATUS.map(s => h("option", { key:s, value:s }, `${STATUS_META[s].emoji} ${s}`))
+            )
+          ),
+
+          /* Stars inline */
+          h(Stars, { value: item.rating, onChange: v => patch("rating", v), size: 16 }),
+
+          /* Episode tracker: current / total */
+          h("div", { style:{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, padding:"8px 12px" } },
+            h("div", { style:{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 } },
+              h("span", { style:{ fontSize:10, color:"#3a3a55", fontFamily:"'Syne',sans-serif", letterSpacing:1 } }, epLabel.toUpperCase()),
+              h("span", { style:{ fontSize:10, color:"#2a2a40" } }, "atual / total")
+            ),
+            h("div", { style:{ display:"flex", alignItems:"center", gap:8 } },
+              /* Current episode controls */
+              h("button", {
+                className: "ep-btn ep-btn-minus",
+                onClick: () => patch("currentEp", Math.max(0, (parseInt(item.currentEp)||0) - 1))
+              }, "−"),
+              h("span", { className:"ep-num", style:{ color: tm.accent, minWidth:28 } }, parseInt(item.currentEp)||0),
+              h("button", {
+                className: "ep-btn ep-btn-plus",
+                onClick: () => patch("currentEp", (parseInt(item.currentEp)||0) + 1)
+              }, "+"),
+              h("span", { style:{ color:"#2a2a40", fontSize:16, fontWeight:300 } }, "/"),
+              /* Total — click to edit */
+              h("input", {
+                type: "number",
+                min: 0,
+                value: item.episodes || "",
+                onChange: e => patch("episodes", e.target.value),
+                placeholder: "?",
+                style:{
+                  background:"transparent", border:"none", borderBottom:"1px solid #2a2a40",
+                  color:"#3a3a55", fontSize:13, fontFamily:"'Syne',sans-serif", fontWeight:800,
+                  width:44, textAlign:"center", padding:"2px 0"
+                }
+              })
+            )
+          ),
+
+          /* Notes inline */
+          editNotes
+            ? h("textarea", {
+                className: "inline-notes",
+                rows: 3,
+                autoFocus: true,
+                value: notesVal,
+                onChange: e => setNotesVal(e.target.value),
+                onBlur: () => { patch("notes", notesVal); setEditNotes(false); },
+                placeholder: "Suas notas..."
+              })
+            : h("div", {
+                className: "inline-field",
+                onClick: () => { setNotesVal(item.notes || ""); setEditNotes(true); },
+                style: { minHeight: 28 }
+              },
+                h("p", { className:"card-notes", style:{ flex:1, color: item.notes ? "#484860" : "#222236" } },
+                  item.notes || "Toque para adicionar notas..."
+                ),
+                h("span", { className:"edit-hint" }, "✏")
+              ),
+
+          /* Watch link */
+          item.watchUrl && isValidUrl(item.watchUrl)
+            ? h("a", {
+                href: item.watchUrl,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                className: "card-watch-link",
+                style: { background:`${tm.accent}0c`, border:`1px solid ${tm.accent}20`, color: tm.accent },
+                onMouseEnter: e => { e.currentTarget.style.background = `${tm.accent}1c`; e.currentTarget.style.borderColor = `${tm.accent}50`; },
+                onMouseLeave: e => { e.currentTarget.style.background = `${tm.accent}0c`; e.currentTarget.style.borderColor = `${tm.accent}20`; },
+              },
+                h("span", { style:{ fontSize:13 } }, "▶"),
+                h("span", { className:"domain" }, getDomain(item.watchUrl)),
+                h("span", { style:{ fontSize:9, opacity:0.45 } }, "↗")
+              )
+            : h("div", { className:"card-add-link", onClick: () => onEdit(item) }, "+ adicionar onde assistir")
+        ),
+
+        /* Delete overlay */
+        del
+          ? h("div", { className:"del-overlay" },
+              h("span", { style:{ fontSize:30 } }, "🗑"),
+              h("p", { className:"del-title" },
+                "Remover ",
+                h("span", null, item.title),
+                "?"
+              ),
+              h("div", { className:"del-btns" },
+                h("button", { className:"btn-generic", onClick: () => setDel(false) }, "Não"),
+                h("button", { className:"btn-danger", onClick: () => onDelete(item.id) }, "Sim")
+              )
+            )
+          : null
+      );
+    }
+
+    /* ── Pill ── */
+    function Pill({ active, color="#eeeeff", onClick, children }) {
+      return h("button", {
+        className: "pill",
+        onClick,
+        style: {
+          border: active ? `1px solid ${color}80` : "1px solid rgba(255,255,255,0.06)",
+          background: active ? `${color}14` : "transparent",
+          color: active ? color : "#3a3a55",
+          boxShadow: active ? `0 0 18px ${color}25` : "none",
+        }
+      }, children);
+    }
+
+    /* ── App ── */
+    function App() {
+      const [items, setItems]     = useState(() => { try { return JSON.parse(localStorage.getItem("otaku-v3")) || SAMPLE; } catch { return SAMPLE; } });
+      const [modal, setModal]     = useState(null);
+      const [filterType, setFT]   = useState("Todos");
+      const [filterStatus, setFS] = useState("Todos");
+      const [search, setSearch]   = useState("");
+      const [sortBy, setSort]     = useState("recent");
+
+      useEffect(() => { localStorage.setItem("otaku-v3", JSON.stringify(items)); }, [items]);
+
+      const save   = form => setItems(p => p.some(i => i.id === form.id) ? p.map(i => i.id === form.id ? form : i) : [...p, form]);
+      const del    = id   => setItems(p => p.filter(i => i.id !== id));
+      const update = form => setItems(p => p.map(i => i.id === form.id ? form : i));
+
+      const filtered = items
+        .filter(i => filterType === "Todos" || i.type === filterType)
+        .filter(i => filterStatus === "Todos" || i.status === filterStatus)
+        .filter(i => i.title.toLowerCase().includes(search.toLowerCase()))
+        .sort((a, b) => sortBy === "rating" ? b.rating - a.rating : sortBy === "az" ? a.title.localeCompare(b.title) : b.id - a.id);
+
+      const S = {
+        total:    items.length,
+        anime:    items.filter(i => i.type === "Anime").length,
+        manga:    items.filter(i => i.type === "Manga").length,
+        serie:    items.filter(i => i.type === "Série").length,
+        done:     items.filter(i => i.status === "Completo").length,
+        watching: items.filter(i => i.status === "Assistindo").length,
+      };
+
+      const statsData = [
+        { l:"Total",      v:S.total,    c:"#eeeeff" },
+        { l:"Anime",      v:S.anime,    c:"#bf5fff" },
+        { l:"Manga",      v:S.manga,    c:"#ff9f1c" },
+        { l:"Séries",     v:S.serie,    c:"#00ffe7" },
+        { l:"Completos",  v:S.done,     c:"#39ff14" },
+        { l:"Assistindo", v:S.watching, c:"#00ffe7" },
+      ];
+
+      return h("div", { id:"app" },
+        h("div", { className:"container" },
+
+          /* Header */
+          h("div", { className:"header" },
+            h("div", null,
+              h("div", { className:"logo" }, "Otaku List"),
+              h("div", { className:"logo-sub" }, "アニメ ・ マンガ ・ シリーズ")
+            ),
+            h("button", { className:"btn-add", onClick: () => setModal("new") }, "＋ ADICIONAR")
+          ),
+
+          /* Stats */
+          h("div", { className:"stats" },
+            statsData.map(s =>
+              h("div", { className:"stat-card", key: s.l },
+                h("div", { className:"stat-num", style:{ color: s.c, textShadow:`0 0 22px ${s.c}44` } }, s.v),
+                h("div", { className:"stat-label" }, s.l)
+              )
+            )
+          ),
+
+          /* Search + Sort */
+          h("div", { className:"search-row" },
+            h("div", { className:"search-wrap" },
+              h("span", { className:"search-icon" }, "⌕"),
+              h("input", { className:"input-base input-search", value: search, onChange: e => setSearch(e.target.value), placeholder:"Buscar título..." })
+            ),
+            h("select", { className:"input-base select-sort", value: sortBy, onChange: e => setSort(e.target.value) },
+              h("option", { value:"recent" }, "Recentes"),
+              h("option", { value:"rating" }, "Avaliação"),
+              h("option", { value:"az" }, "A → Z")
+            )
+          ),
+
+          /* Filter Pills */
+          h("div", { className:"pills" },
+            h(Pill, { active: filterType === "Todos", onClick: () => setFT("Todos") }, "Todos"),
+            TYPES.map(t =>
+              h(Pill, { key:t, active: filterType === t, color: TYPE_META[t].accent, onClick: () => setFT(t) },
+                `${TYPE_META[t].icon} ${t}`
+              )
+            ),
+            h("div", { className:"pill-divider" }),
+            h(Pill, { active: filterStatus === "Todos", onClick: () => setFS("Todos") }, "Todos status"),
+            STATUS.map(s =>
+              h(Pill, { key:s, active: filterStatus === s, color: STATUS_META[s].color, onClick: () => setFS(s) },
+                `${STATUS_META[s].emoji} ${s}`
+              )
+            )
+          ),
+
+          /* Grid */
+          filtered.length === 0
+            ? h("div", { className:"empty" },
+                h("div", { className:"empty-icon" }, "⛩"),
+                h("p", { className:"empty-title" }, items.length === 0 ? "SUA LISTA ESTÁ VAZIA" : "NENHUM RESULTADO"),
+                h("p", { className:"empty-sub" }, items.length === 0 ? "Clique em + ADICIONAR para começar" : "Tente outros filtros")
+              )
+            : h(React.Fragment, null,
+                h("p", { className:"grid-count" }, `${filtered.length} ${filtered.length === 1 ? "item" : "itens"}`),
+                h("div", { className:"grid" },
+                  filtered.map(item => h(Card, { key: item.id, item, onEdit: i => setModal(i), onDelete: del, onUpdate: update }))
+                )
+              ),
+
+          /* Modal */
+          modal
+            ? h(Modal, { item: modal === "new" ? null : modal, onClose: () => setModal(null), onSave: save })
+            : null
+        )
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("app")).render(h(App, null));
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
